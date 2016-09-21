@@ -3,20 +3,113 @@
   <head>
   </head>
   <body>
+    <canvas id="canvasInAPerfectWorld" width="490" height="220"></canvas>
     <div class="container">
-      <h1>WebSockets Chat App</h1>
+      <h1>WebSockets Drawing App</h1>
       <div id="chat-log"></div>
       <div id="form">
         <input type="text" id="message">
         <button id="disconnect">Disconnect</button>
       </div>
     </div>
+    
 
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
     <script>
+var color_list = ['#ff0000','#00ff00','#0000ff','#008000','#008080','#80f8f8','#009080','#fa0f9f','#fff8f0','#0ff7ff'];
+var client_color = color_list[Math.floor((Math.random() * 10) + 1)];
+    context = document.getElementById('canvasInAPerfectWorld').getContext("2d");
+$('canvas').mousedown(function(e){
+  var mouseX = e.pageX - this.offsetLeft;
+  var mouseY = e.pageY - this.offsetTop;
+    
+  paint = true;
+  addClick(e.pageX - this.offsetLeft, e.pageY - this.offsetTop, false ,client_color);
+  redraw();
+});
+$('canvas').mousemove(function(e){
+  if(paint){
+    addClick(e.pageX - this.offsetLeft, e.pageY - this.offsetTop, true, client_color);
+    redraw();
+  }
+});
+$('canvas').mouseup(function(e){
+  paint = false;
+});
+$('canvas').mouseleave(function(e){
+  paint = false;
+});
+var clickX = new Array();
+var clickY = new Array();
+var clickDrag = new Array();
+var spotColor = new Array();
+
+var paint;
+
+function addClick(x, y, dragging, color)
+{
+  clickX.push(x);
+  clickY.push(y);
+  clickDrag.push(dragging);
+  console.log(dragging);
+  spotColor.push(color);
+  // converting all data to numbers
+  // var color_number = parseInt('0x'+color.slice);
+  // x: 999 y: 999 dragging: 1 color: 16777215
+  // var dragging_number = parseInt(dragging);
+  // var x_number = x*1000000000000000;
+  // var y_number = y*1000000000000;
+  // var dragging_number = dragging_number*1000000000
+  // console.log('x_number:'+x+",y_number"+y+",dragging_number:"+dragging_number+",color_number"+color_number)
+  // console.log(x_number+y_number+dragging_number+color)
+
+
+  data = x+":"+y+":"+color+":"+dragging
+  color
+  // data = {"x":x,"y":y,"color":color,"dragging":dragging};
+  
+  // sending over the line
+  try {
+    socket.send(data);
+    console.log("Sent: " + data)
+  } catch(exception) {
+    addMessage("Failed To Send")
+  }
+
+}
+function addFriendClick(x, y, dragging, color) {
+  clickX.push(x);
+  clickY.push(y);
+  clickDrag.push(dragging == 'true');
+  console.log(dragging);
+  spotColor.push(color);
+  redraw();
+}
+function redraw(){
+  context.clearRect(0, 0, context.canvas.width, context.canvas.height); // Clears the canvas
+  
+  
+  context.lineJoin = "round";
+  context.lineWidth = 5;
+      
+  for(var i=0; i < clickX.length; i++) {    
+    context.beginPath();
+    if(clickDrag[i] && i){
+      context.moveTo(clickX[i-1], clickY[i-1]);
+      context.strokeStyle = spotColor[i-1];
+     }else{
+       context.moveTo(clickX[i]-1, clickY[i]);
+       context.strokeStyle = spotColor[i-1];
+     }
+     context.lineTo(clickX[i], clickY[i]);
+     context.strokeStyle = spotColor[i-1];
+     context.closePath();
+     context.stroke();
+  }
+}
       // where our WebSockets logic will go later
       var socket, host;
-      host = "ws://localhost:3001";
+      host = "ws://40beef9a.ngrok.io";
 
       function connect() {
         try {
@@ -33,7 +126,10 @@
           }
 
           socket.onmessage = function(msg) {
-            addMessage("Received: " + msg.data);
+            msg_obj = msg.data.split(':');
+            addMessage("Received: " + msg_obj);
+            addFriendClick(msg_obj[0],msg_obj[1], msg_obj[3], msg_obj[2] )
+            console.log(msg_obj)
           }
         } catch(exception) {
           addMessage("Error: " + exception);

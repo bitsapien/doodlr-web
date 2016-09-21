@@ -30,5 +30,5 @@ EM.run do
     end
   end
 
-  App.run! :port => 3000
+  App.run! :host => '0.0.0.0', :port => 3000
 end
